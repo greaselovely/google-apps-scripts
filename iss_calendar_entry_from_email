@@ -1,0 +1,91 @@
+function createCalendarEntry() {
+  var labelName = "SpotTheStation"; // Replace with your label name
+  var secondRecipient = "iss@gmail.com"; // Replace with the email address of the second recipient
+  var label = GmailApp.getUserLabelByName(labelName);
+  var threads = label.getThreads();
+
+  var monthMap = {
+    'Jan': '01',
+    'Feb': '02',
+    'Mar': '03',
+    'Apr': '04',
+    'May': '05',
+    'Jun': '06',
+    'Jul': '07',
+    'Aug': '08',
+    'Sep': '09',
+    'Oct': '10',
+    'Nov': '11',
+    'Dec': '12'
+  };
+
+  for (var i = 0; i < threads.length; i++) {
+    var messages = threads[i].getMessages();
+
+    for (var j = 0; j < messages.length; j++) {
+      var message = messages[j];
+      var subject = message.getSubject();
+      var body = message.getPlainBody();
+
+      // Parse date, month, day, and start time from the body
+      var dateTimePattern = /Time: (\w{3}) (\w{3}) (\d{2}) ([0-9: ]+) ([AP]M)/;
+      var dateTimeMatch = dateTimePattern.exec(body);
+      if (dateTimeMatch) {
+        var monthAbbreviation = dateTimeMatch[2];
+        var month = monthMap[monthAbbreviation];
+        var day = dateTimeMatch[3];
+        var startTimeString = dateTimeMatch[4];
+        var meridianAMPM = dateTimeMatch[5];
+
+        // Convert start time to 24-hour format
+        var startTime = convertTo24HourFormat(startTimeString, meridianAMPM);
+
+        // Calculate end time by adding 15 minutes to the start time
+        var endTime = new Date(startTime.getTime() + 15 * 60000);
+
+        // Remove date and time portion from the body
+        var bodyWithoutDateTime = body.replace(dateTimeMatch[0], '');
+
+        // Remove comma and space before "Visible" in the note
+        var description = bodyWithoutDateTime.replace(/, Visible/g, ' Visible');
+
+        // Create calendar event
+        var calendar = CalendarApp.getDefaultCalendar();
+        var event = calendar.createEvent(subject, startTime, endTime);
+        event.setDescription(description);
+
+        // Add a 30-minute reminder
+        event.addEmailReminder(30);
+
+        // Specify a second recipient
+        
+        event.addGuest(secondRecipient);
+
+        Logger.log("Created event: " + event.getTitle());
+        Logger.log("Month: " + month + "\nDay: " + day + "\nStart Time: " + startTimeString + "\nStart String: " + startTime + "\nEnd   String: " + endTime + "\nAM or PM: " + meridianAMPM);
+      } else {
+        Logger.log("Failed to parse date, month, day, and start time from email: " + subject);
+      }
+    }
+  }
+}
+
+function convertTo24HourFormat(timeString, meridian) {
+  var [hours, minutes] = timeString.split(":");
+  hours = parseInt(hours, 10);
+  minutes = parseInt(minutes, 10);
+
+  if (meridian === "PM" && hours !== 12) {
+    hours += 12;
+  } else if (meridian === "AM" && hours === 12) {
+    hours = 0;
+  }
+
+  var startTime = new Date();
+  startTime.setHours(hours);
+  startTime.setMinutes(minutes);
+  startTime.setSeconds(0);
+  startTime.setMilliseconds(0);
+
+  return startTime;
+}
