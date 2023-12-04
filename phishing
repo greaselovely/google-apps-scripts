@@ -1,0 +1,30 @@
+function FilterThreatSim() {
+var threads = GmailApp.getInboxThreads(0, 5);
+var my_label = "Phishing"
+var email_header_label = "X-PhishMe:"
+
+var label = GmailApp.getUserLabelByName(my_label);
+
+  if (label == null);
+    {
+      var label = GmailApp.createLabel(my_label);
+    }
+
+  for (var i = 0; i < threads.length; i++) 
+  {
+      var messages=threads[i].getMessages();
+      for (var j = 0; j < messages.length; j++) 
+    {
+        var message=messages[j];
+        var body=message.getRawContent();
+
+        if(body.indexOf(email_header_label)>-1)
+        {
+            //threads[i].moveToArchive();                
+            threads[i].addLabel(label);
+            Logger.log(body);
+        }
+            Utilities.sleep(1000);
+    }
+  }
+}
