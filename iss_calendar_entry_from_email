@@ -30,41 +30,48 @@ function createCalendarEntry() {
       // Parse date, month, day, and start time from the body
       var dateTimePattern = /Time: (\w{3}) (\w{3}) (\d{2}) ([0-9: ]+) ([AP]M)/;
       var dateTimeMatch = dateTimePattern.exec(body);
-      // Logger.log("dateTimeMatch > " + dateTimeMatch)
+
       if (dateTimeMatch) {
         var monthAbbreviation = dateTimeMatch[2];
         var month = monthMap[monthAbbreviation];
-        var day = dateTimeMatch[3];
+        var date = dateTimeMatch[3];
         var startTimeString = dateTimeMatch[4];
         var meridianAMPM = dateTimeMatch[5];
 
         // Convert start time to 24-hour format
-        var startTime = convertTo24HourFormat(month, day, startTimeString, meridianAMPM);
+        var startTime = convertTo24HourFormat(month, date, startTimeString, meridianAMPM);
 
         // Calculate end time by adding 15 minutes to the start time
-        var endTime = new Date(startTime.getTime() + 15 * 60000);
+        var endTime = new Date(startTime.getTime() + 15 * 60000); // 15 minutes in milliseconds
 
-        // Remove date and time portion from the body
-        var bodyWithoutDateTime = body.replace(dateTimeMatch[0], '');  // working
+        // Check if an event with the same subject exists
+        var events = CalendarApp.getDefaultCalendar().getEvents(startTime, endTime);
+        var eventExists = events.some(function(event) {
+          return event.getTitle() === subject;
+        });
 
-        // Remove comma and space before "Visible" in the note
-        var description = bodyWithoutDateTime.replace(/, Visible/g, 'Visible');  // working
+        if (!eventExists) {
+          // Remove date and time portion from the body
+          var bodyWithoutDateTime = body.replace(dateTimeMatch[0], '');
 
-        // Logger.log("subject, startTime, endTime. > " + subject + " > " + startTime + " > " + endTime)
+          // Remove comma and space before "Visible" in the note
+          var description = bodyWithoutDateTime.replace(/, Visible/g, 'Visible');
 
-        // Create calendar event
-        var calendar = CalendarApp.getDefaultCalendar();
-        var event = calendar.createEvent(subject, startTime, endTime);
-        event.setDescription(description);
+          // Create calendar event
+          var calendar = CalendarApp.getDefaultCalendar();
+          var event = calendar.createEvent(subject, startTime, endTime);
+          event.setDescription(description);
+          event.addEmailReminder(30);
 
-        // Add a 30-minute reminder
-        event.addEmailReminder(30);
+          // Specify a second recipient
+          event.addGuest(secondRecipient);
 
-        // Specify a second recipient
-        event.addGuest(secondRecipient);
+          Logger.log("Created event: " + event.getTitle());
+          Logger.log("Month: " + month + "\nDay: " + date + "\nStart Time: " + startTimeString + "\nStart String: " + startTime + "\nEnd   String: " + endTime + "\nAM or PM: " + meridianAMPM);
 
-        // Logger.log("Created event: " + event.getTitle());
-        Logger.log("Month: " + month + "\nDay: " + day + "\nStart Time: " + startTimeString + "\nStart String: " + startTime + "\nEnd   String: " + endTime + "\nAM or PM: " + meridianAMPM);
+        } else {
+          Logger.log("Skipping calendar entry. Event with the same subject already exists: " + subject);
+        }
       } else {
         Logger.log("Failed to parse date, month, day, and start time from email: " + subject);
       }
@@ -84,8 +91,8 @@ function convertTo24HourFormat(month, date, timeString, meridian) {
   }
 
   var startTime = new Date();
-  startTime.setFullYear(new Date().getFullYear()); // Use the current year
-  startTime.setMonth(parseInt(month) - 1); // Months are zero-based in JavaScript Date object
+  startTime.setFullYear(new Date().getFullYear());
+  startTime.setMonth(parseInt(month) - 1);
   startTime.setDate(parseInt(date));
   startTime.setHours(hours);
   startTime.setMinutes(minutes);
