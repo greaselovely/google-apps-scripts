@@ -17,7 +17,7 @@ function sendNotificationToNtfy(message) {
 
 function createCalendarEntry() {
   var labelName = "SpotTheStation"; // Replace with your label name
-  var secondRecipient = "bad-email@gmail.com"; // Replace with the email address of the second recipient
+  var recipients = ["email1@gmail.com", "email2@gmail.com", "email3@gmail.com", "email4@gmail.com"]; // Replace with the email addresses of the recipients
   var label = GmailApp.getUserLabelByName(labelName);
   var threads = label.getThreads();
 
@@ -80,8 +80,10 @@ function createCalendarEntry() {
           event.setDescription(description);
           event.addEmailReminder(30);
 
-          // Specify a second recipient
-          event.addGuest(secondRecipient);
+          // Add all recipients as guests
+          recipients.forEach(function(recipient) {
+            event.addGuest(recipient);
+          });
 
           Logger.log("Created event: " + event.getTitle());
           Logger.log("Month: " + month + "\nDay: " + date + "\nStart Time: " + startTimeString + "\nStart String: " + startTime + "\nEnd   String: " + endTime + "\nAM or PM: " + meridianAMPM);
