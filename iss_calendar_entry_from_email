@@ -1,3 +1,20 @@
+function sendNotificationToNtfy(message) {
+  var ntfyTopic = "iss_scheduler"; // Replace with your ntfy.sh topic
+  var url = "https://ntfy.sh/" + ntfyTopic;
+  
+  var options = {
+    'method': 'post',
+    'payload': message
+  };
+  
+  try {
+    UrlFetchApp.fetch(url, options);
+    Logger.log("Notification sent to ntfy.sh");
+  } catch (error) {
+    Logger.log("Error sending notification to ntfy.sh: " + error);
+  }
+}
+
 function createCalendarEntry() {
   var labelName = "SpotTheStation"; // Replace with your label name
   var secondRecipient = "bad-email@gmail.com"; // Replace with the email address of the second recipient
@@ -68,6 +85,10 @@ function createCalendarEntry() {
 
           Logger.log("Created event: " + event.getTitle());
           Logger.log("Month: " + month + "\nDay: " + date + "\nStart Time: " + startTimeString + "\nStart String: " + startTime + "\nEnd   String: " + endTime + "\nAM or PM: " + meridianAMPM);
+
+          // Send notification to ntfy.sh
+          var notificationMessage = "New ISS sighting scheduled: " + subject + " on " + startTime.toLocaleString();
+          sendNotificationToNtfy(notificationMessage);
 
         } else {
           Logger.log("Skipping calendar entry. Event with the same subject already exists: " + subject);
